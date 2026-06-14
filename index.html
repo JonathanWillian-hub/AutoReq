@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoReq — Gestão de Requisitos</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+        window.mermaid = mermaid;
+    </script>
+</head>
+<body>
+
+<!-- TOAST -->
+<div id="toast" class="toast"></div>
+
+<!-- MODAL -->
+<div id="modal-overlay" class="modal-overlay" style="display:none;">
+    <div class="modal-box" id="modal-box"></div>
+</div>
+
+<!-- SIDEBAR OVERLAY (mobile) -->
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+<!-- ── LOGIN / REGISTER ─────────────────────────── -->
+<div id="login-screen" class="auth-container">
+    <div class="auth-card">
+        <img src="assets/imgs/Logo2_AutoReq.png" alt="AutoReq" class="logo-img" onerror="this.outerHTML='<div style=\'font-size:1.8rem;font-weight:700;color:#0f172a;margin-bottom:8px;\'>AutoReq</div>'">
+        
+        <!-- Formulário de Login -->
+        <div id="auth-login-box">
+            <p class="brand-sub">Entrar no Sistema</p>
+            <form id="login-form">
+                <div class="group" style="text-align:left;">
+                    <label>E-mail institucional</label>
+                    <input type="email" id="login-email" placeholder="dev@empresa.com" required>
+                </div>
+                <div class="group" style="text-align:left;">
+                    <label>Senha</label>
+                    <input type="password" id="login-password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+            </form>
+            <p style="margin-top:15px; font-size:0.85rem; color:var(--sub);">
+                Não tem conta? <a href="#" onclick="toggleAuth(event, 'register')" style="color:var(--primary); font-weight:600;">Cadastre-se</a>
+            </p>
+        </div>
+
+        <!-- Formulário de Cadastro -->
+        <div id="auth-register-box" style="display:none;">
+            <p class="brand-sub">Criar nova conta</p>
+            <form id="register-form">
+                <div class="group" style="text-align:left;">
+                    <label>Nome Completo</label>
+                    <input type="text" id="reg-nome" placeholder="Seu nome" required>
+                </div>
+                <div class="group" style="text-align:left;">
+                    <label>E-mail</label>
+                    <input type="email" id="reg-email" placeholder="email@exemplo.com" required>
+                </div>
+                <div class="group" style="text-align:left;">
+                    <label>Senha</label>
+                    <input type="password" id="reg-password" placeholder="Mínimo 6 caracteres" required>
+                </div>
+                <button type="submit" class="btn btn-success btn-block">Criar Conta</button>
+            </form>
+            <p style="margin-top:15px; font-size:0.85rem; color:var(--sub);">
+                Já tem conta? <a href="#" onclick="toggleAuth(event, 'login')" style="color:var(--primary); font-weight:600;">Fazer Login</a>
+            </p>
+        </div>
+
+        <div id="login-error" class="msg-error" style="display:none; margin-top:15px;"></div>
+    </div>
+</div>
+
+<!-- ── MAIN APP ────────────────────────────────── -->
+<div id="main-app" class="app-layout" style="display:none;">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <img src="assets/imgs/Logo2_AutoReq.png" alt="AutoReq" class="sidebar-logo"
+                 onerror="this.outerHTML='<span style=\'font-size:1.3rem;font-weight:700;color:#fff;letter-spacing:-0.03em;\'>AutoReq</span>'">
+        </div>
+
+        <nav class="nav-container">
+            <span class="nav-section-label">Menu</span>
+            <a href="#" class="nav-item active" data-target="dashboard">
+                <i class="fas fa-th-large"></i> Dashboard
+            </a>
+            <a href="#" class="nav-item" data-target="projetos">
+                <i class="fas fa-folder-open"></i> Projetos
+            </a>
+            <a href="#" class="nav-item" data-target="requisitos">
+                <i class="fas fa-clipboard-list"></i> Requisitos
+            </a>
+            <a href="#" class="nav-item" data-target="uml">
+                <i class="fas fa-sitemap"></i> Diagramas UML
+            </a>
+            <a href="#" class="nav-item" data-target="relatorios">
+                <i class="fas fa-chart-bar"></i> Relatórios
+            </a>
+
+            <a href="#" id="logout-btn" class="nav-item logout-link" style="margin-top:auto;">
+                <i class="fas fa-sign-out-alt"></i> Sair
+            </a>
+        </nav>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="main-container">
+
+        <header>
+            <div class="header-left">
+                <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="breadcrumb">
+                    <i class="fas fa-home" style="font-size:.75rem;"></i>
+                    <span id="breadcrumb-label"><strong>Dashboard</strong></span>
+                </div>
+            </div>
+            <div class="user-profile">
+                <div>
+                    <span id="user-name">Usuário</span>
+                    <span id="user-role">analista</span>
+                </div>
+                <div class="avatar-wrapper" id="avatar-wrapper">
+                    <div class="avatar avatar-btn" id="user-avatar" role="button" aria-haspopup="true" aria-expanded="false" tabindex="0" title="Menu da conta">–</div>
+                    <div class="profile-dropdown" id="profile-dropdown" role="menu">
+                        <button class="profile-dropdown-item" id="dropdown-config-conta" role="menuitem">
+                            <i class="fas fa-user-cog"></i> Configurar Conta
+                        </button>
+                        <div class="profile-dropdown-divider"></div>
+                        <button class="profile-dropdown-item profile-dropdown-item--danger" id="dropdown-logout" role="menuitem">
+                            <i class="fas fa-sign-out-alt"></i> Sair
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="content-area">
+
+            <!-- ── DASHBOARD ─────────────────────── -->
+            <section id="dashboard" class="tab-content active">
+                <div class="page-header">
+                    <h2>Visão Geral</h2>
+                    <p>Resumo do seu projeto de requisitos</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue"><i class="fas fa-rocket"></i></div>
+                        <div class="stat-info">
+                            <small>Projetos</small>
+                            <h3 id="stat-proj">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon cyan"><i class="fas fa-list-check"></i></div>
+                        <div class="stat-info">
+                            <small>Requisitos</small>
+                            <h3 id="stat-req">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon yellow"><i class="fas fa-clock"></i></div>
+                        <div class="stat-info">
+                            <small>Pendentes</small>
+                            <h3 id="stat-pend">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green"><i class="fas fa-circle-check"></i></div>
+                        <div class="stat-info">
+                            <small>Aprovados</small>
+                            <h3 id="stat-aprov">0</h3>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ── PROJETOS ──────────────────────── -->
+            <section id="projetos" class="tab-content">
+                <div class="header-row">
+                    <h2>Meus Projetos</h2>
+                </div>
+
+                <div class="card">
+                    <p class="form-section-title" id="proj-form-title">
+                        <i class="fas fa-plus-circle"></i> Novo Projeto
+                    </p>
+                    <form id="form-projeto">
+                        <input type="hidden" id="proj-edit-id">
+                        <div class="grid-2">
+                            <div class="group">
+                                <label>Nome do Projeto *</label>
+                                <input type="text" id="proj-nome" placeholder="Ex: Sistema ERP" required>
+                            </div>
+                            <div class="group">
+                                <label>Cliente *</label>
+                                <input type="text" id="proj-cliente" placeholder="Ex: Acme Corp" required>
+                            </div>
+                        </div>
+                        <div class="grid-2">
+                            <div class="group">
+                                <label>Status</label>
+                                <select id="proj-status">
+                                    <option value="Planejamento">Planejamento</option>
+                                    <option value="Ativo">Ativo</option>
+                                    <option value="Concluído">Concluído</option>
+                                    <option value="Cancelado">Cancelado</option>
+                                </select>
+                            </div>
+                            <div class="group">
+                                <label>Descrição</label>
+                                <input type="text" id="proj-desc" placeholder="Breve descrição...">
+                            </div>
+                        </div>
+                        <div class="btn-group">
+                            <button type="submit" class="btn btn-primary" id="proj-btn-submit">
+                                <i class="fas fa-save"></i> Criar Projeto
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="proj-btn-cancelar"
+                                    style="display:none;" onclick="cancelarEdicaoProjeto()">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <p class="card-title"><i class="fas fa-table-list"></i> Projetos Cadastrados</p>
+                    <div class="table-wrap">
+                        <table id="table-projetos">
+                            <thead>
+                                <tr>
+                                    <th>Projeto</th>
+                                    <th>Cliente</th>
+                                    <th>Status</th>
+                                    <th style="width:160px;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ── REQUISITOS ────────────────────── -->
+            <section id="requisitos" class="tab-content">
+                <div class="header-row">
+                    <h2>Requisitos</h2>
+                </div>
+
+                <div class="card">
+                    <p class="form-section-title" id="req-form-title">
+                        <i class="fas fa-plus-circle"></i> Cadastrar Requisito
+                    </p>
+                    <form id="form-requisito">
+                        <input type="hidden" id="req-edit-id">
+                        <div class="group">
+                            <label>Vincular ao Projeto *</label>
+                            <select id="req-projeto-vinculo" required>
+                                <option value="">Selecione um projeto...</option>
+                            </select>
+                        </div>
+                        <div class="grid-3">
+                            <div class="group">
+                                <label>Código *</label>
+                                <input type="text" id="req-id" placeholder="RF001" required>
+                            </div>
+                            <div class="group">
+                                <label>Tipo</label>
+                                <select id="req-tipo">
+                                    <option value="RF">Funcional (RF)</option>
+                                    <option value="RNF">Não Funcional (RNF)</option>
+                                </select>
+                            </div>
+                            <div class="group">
+                                <label>Prioridade</label>
+                                <select id="req-prioridade">
+                                    <option value="Alta">Alta</option>
+                                    <option value="Média">Média</option>
+                                    <option value="Baixa">Baixa</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="group">
+                            <label>Título *</label>
+                            <input type="text" id="req-titulo" placeholder="Ex: Autenticação de Usuário" required>
+                        </div>
+                        <div class="group">
+                            <label>Descrição</label>
+                            <textarea id="req-desc" rows="4" placeholder="Descreva o requisito em detalhes..."></textarea>
+                        </div>
+                        <div class="btn-group">
+                            <button type="submit" class="btn btn-primary" id="req-btn-submit">
+                                <i class="fas fa-save"></i> Salvar Requisito
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="req-btn-cancelar"
+                                    style="display:none;" onclick="cancelarEdicaoReq()">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- ── UML ──────────────────────────── -->
+            <section id="uml" class="tab-content">
+                <div class="page-header">
+                    <h2>Diagramas UML</h2>
+                    <p>Gerencie os diagramas dos seus projetos por tipo</p>
+                </div>
+
+                <!-- Seletor de Projeto -->
+                <div class="card uml-project-selector">
+                    <div class="uml-selector-row">
+                        <div class="uml-selector-icon">
+                            <i class="fas fa-folder-open"></i>
+                        </div>
+                        <div class="group" style="margin:0;flex:1;">
+                            <label>Projeto</label>
+                            <select id="uml-projeto-select">
+                                <option value="">Escolha um projeto para gerenciar diagramas...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estado inicial sem projeto selecionado -->
+                <div id="uml-empty-state" class="card" style="margin-top:0;">
+                    <div class="empty-state">
+                        <i class="fas fa-sitemap"></i>
+                        <p>Selecione um projeto acima para gerenciar seus diagramas UML.</p>
+                    </div>
+                </div>
+
+                <!-- Painel principal (oculto até selecionar projeto) -->
+                <div id="uml-panel" style="display:none;">
+
+                    <!-- Tabs de tipo de diagrama -->
+                    <div class="uml-type-tabs">
+                        <button class="uml-tab-btn active" data-tipo="caso_uso" onclick="umlSelecionarTipo('caso_uso')">
+                            <i class="fas fa-users-rectangle"></i>
+                            <span>Caso de Uso</span>
+                        </button>
+                        <button class="uml-tab-btn" data-tipo="classe" onclick="umlSelecionarTipo('classe')">
+                            <i class="fas fa-table-cells-large"></i>
+                            <span>Classe</span>
+                        </button>
+                        <button class="uml-tab-btn" data-tipo="sequencia" onclick="umlSelecionarTipo('sequencia')">
+                            <i class="fas fa-diagram-project"></i>
+                            <span>Sequência</span>
+                        </button>
+                    </div>
+
+                    <!-- Card de upload -->
+                    <div class="card uml-upload-card">
+                        <div class="uml-upload-header">
+                            <div>
+                                <p class="card-title" style="margin-bottom:4px;">
+                                    <span id="uml-upload-label">Adicionar Diagrama de Caso de Uso</span>
+                                </p>
+                                <p style="font-size:.8rem;color:var(--sub);">PNG, JPG, SVG, GIF ou WebP — máx. 10 MB</p>
+                            </div>
+                            <span class="uml-type-badge" id="uml-type-badge">Caso de Uso</span>
+                        </div>
+
+                        <!-- Dropzone -->
+                        <div class="uml-dropzone" id="uml-dropzone">
+                            <input type="file" id="uml-file-input"
+                                   accept="image/png,image/jpeg,image/svg+xml,image/gif,image/webp"
+                                   style="display:none;">
+                            <div class="uml-dropzone-inner" onclick="document.getElementById('uml-file-input').click()">
+                                <div class="uml-dropzone-icon">
+                                    <i class="fas fa-cloud-arrow-up"></i>
+                                </div>
+                                <p class="uml-dropzone-text">
+                                    <strong>Clique para selecionar</strong> ou arraste a imagem aqui
+                                </p>
+                                <p class="uml-dropzone-hint">PNG · JPG · SVG · GIF · WebP — máx. 10 MB</p>
+                            </div>
+                        </div>
+
+                        <!-- Preview da imagem selecionada (oculto por padrão) -->
+                        <div id="uml-preview-wrap" style="display:none;">
+                            <div class="uml-preview-box">
+                                <img id="uml-preview-img" src="" alt="Preview do diagrama">
+                            </div>
+                            <div class="uml-preview-actions">
+                                <div>
+                                    <p class="uml-preview-filename" id="uml-preview-filename">–</p>
+                                    <p class="uml-preview-size"    id="uml-preview-size">–</p>
+                                </div>
+                                <div class="btn-group">
+                                    <button class="btn btn-secondary" onclick="umlCancelarPreview()">
+                                        <i class="fas fa-times"></i> Cancelar
+                                    </button>
+                                    <button class="btn btn-primary" onclick="umlSalvarDiagrama()">
+                                        <i class="fas fa-check"></i> Confirmar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Galeria -->
+                    <div class="card">
+                        <div class="uml-upload-header">
+                            <p class="card-title">
+                                <i class="fas fa-images"></i>
+                                <span id="uml-gallery-label">Diagramas de Caso de Uso</span>
+                                <span class="uml-count-badge" id="uml-count-badge">0</span>
+                            </p>
+                        </div>
+                        <div id="uml-gallery-empty" class="empty-state" style="display:none;">
+                            <i class="fas fa-image"></i>
+                            <p>Nenhum diagrama adicionado ainda.</p>
+                        </div>
+                        <div class="uml-gallery" id="uml-gallery"></div>
+                    </div>
+
+                </div><!-- /uml-panel -->
+
+            </section>
+
+            <!-- ── RELATÓRIOS ────────────────────── -->
+            <section id="relatorios" class="tab-content">
+                <div class="header-row">
+                    <h2>Relatórios</h2>
+                    <div class="group" style="margin:0;min-width:220px;">
+                        <select id="relatorio-projeto-select">
+                            <option value="">Escolha um projeto...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="card" id="export-card" style="display:none;">
+                    <div class="export-row">
+                        <div>
+                            <h3>Exportar Documentação (ERS)</h3>
+                            <p>Gere o documento de requisitos do projeto selecionado.</p>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-primary" onclick="exportarERS('pdf')">
+                                <i class="fas fa-file-pdf"></i> PDF
+                            </button>
+                            <button class="btn btn-secondary" onclick="exportarERS('md')">
+                                <i class="fas fa-file-alt"></i> Markdown
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="card">
+                        <p class="card-title"><i class="fas fa-chart-pie"></i> RF vs RNF</p>
+                        <canvas id="chartRequisitos"></canvas>
+                    </div>
+                    <div class="card">
+                        <p class="card-title"><i class="fas fa-chart-bar"></i> Por Prioridade</p>
+                        <canvas id="chartCategorias"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ── DETALHES PROJETO ──────────────── -->
+            <section id="detalhes-projeto" class="tab-content">
+                <div class="header-row">
+                    <h2 id="view-projeto-nome">–</h2>
+                    <button class="btn btn-secondary" onclick="voltarProjetos()">
+                        <i class="fas fa-arrow-left"></i> Voltar
+                    </button>
+                </div>
+
+                <div class="card filtros-card">
+                    <div class="filtros-row">
+                        <div class="group">
+                            <label>Tipo</label>
+                            <select id="filtro-tipo" onchange="aplicarFiltros()">
+                                <option value="">Todos</option>
+                                <option value="RF">RF</option>
+                                <option value="RNF">RNF</option>
+                            </select>
+                        </div>
+                        <div class="group">
+                            <label>Prioridade</label>
+                            <select id="filtro-prioridade" onchange="aplicarFiltros()">
+                                <option value="">Todas</option>
+                                <option value="Alta">Alta</option>
+                                <option value="Média">Média</option>
+                                <option value="Baixa">Baixa</option>
+                            </select>
+                        </div>
+                        <div class="group">
+                            <label>Status</label>
+                            <select id="filtro-status" onchange="aplicarFiltros()">
+                                <option value="">Todos</option>
+                                <option value="Pendente">Pendente</option>
+                                <option value="Aprovado">Aprovado</option>
+                                <option value="Revisão">Revisão</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="table-wrap">
+                        <table id="table-requisitos-projeto">
+                            <thead>
+                                <tr>
+                                    <th>Cód</th>
+                                    <th>Título</th>
+                                    <th>Tipo</th>
+                                    <th>Prioridade</th>
+                                    <th>Status</th>
+                                    <th style="width:200px;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div><!-- /main-container -->
+</div><!-- /app-layout -->
+
+<!-- ── PERFIL DRAWER ──────────────────────────────────── -->
+<div class="perfil-overlay" id="perfil-overlay" onclick="fecharPerfilDrawer()"></div>
+<aside class="perfil-drawer" id="perfil-drawer" aria-label="Configurações da Conta">
+    <div class="perfil-drawer-header">
+        <div class="perfil-drawer-title">
+            <i class="fas fa-user-cog"></i> Configurações da Conta
+        </div>
+        <button class="perfil-close-btn" onclick="fecharPerfilDrawer()" title="Fechar" aria-label="Fechar painel">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="perfil-drawer-body">
+        <div class="perfil-avatar-wrap">
+            <div class="perfil-avatar-big" id="perfil-avatar-big">?</div>
+            <div>
+                <div class="perfil-avatar-name" id="perfil-display-nome">–</div>
+                <div class="perfil-avatar-role" id="perfil-display-role">analista</div>
+            </div>
+        </div>
+        <hr class="perfil-divider">
+
+        <div id="perfil-msg-error"   class="msg-error"   style="display:none;"></div>
+        <div id="perfil-msg-success" class="msg-success" style="display:none;"></div>
+
+        <p class="perfil-section-label"><i class="fas fa-id-card"></i> Dados Pessoais</p>
+        <div class="group">
+            <label>Nome Completo</label>
+            <input type="text" id="perfil-nome" placeholder="O seu nome" autocomplete="name">
+        </div>
+        <div class="group">
+            <label>E-mail</label>
+            <input type="email" id="perfil-email" placeholder="email@exemplo.com" autocomplete="email">
+        </div>
+
+        <p class="perfil-section-label">
+            <i class="fas fa-lock"></i> Alterar Senha
+            <span class="perfil-optional">(opcional)</span>
+        </p>
+        <div class="group">
+            <label>Nova Senha</label>
+            <div class="input-password-wrap">
+                <input type="password" id="perfil-senha" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+                <button type="button" class="toggle-pw-btn" onclick="toggleSenhaVisivel()" title="Mostrar/Ocultar senha" aria-label="Mostrar senha">
+                    <i class="fas fa-eye" id="toggle-pw-icon"></i>
+                </button>
+            </div>
+        </div>
+        <div class="group">
+            <label>Confirmar Nova Senha</label>
+            <input type="password" id="perfil-senha-confirm" placeholder="Repita a senha" autocomplete="new-password">
+        </div>
+
+        <div class="btn-group" style="margin-top:8px;">
+            <button class="btn btn-primary" id="perfil-salvar-btn" onclick="salvarPerfil()">
+                <i class="fas fa-save"></i> Guardar Alterações
+            </button>
+            <button class="btn btn-secondary" onclick="fecharPerfilDrawer()">
+                <i class="fas fa-times"></i> Cancelar
+            </button>
+        </div>
+    </div>
+</aside>
+
+<script src="script.js"></script>
+</body>
+</html>
