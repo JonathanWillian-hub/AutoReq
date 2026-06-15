@@ -148,23 +148,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const { ok, data } = await apiFetch(`${API}?action=login`, {
-                method: 'POST',
-                body: JSON.stringify({ email, senha }),
-            });
+            // 🚀 INTEGRAÇÃO COM SUPABASE: Busca o usuário pelo e-mail e senha informados
+            const { data: usuario, error } = await supabaseClient
+                .from('usuarios')
+                .select('*')
+                .eq('email', email)
+                .eq('senha', senha)
+                .maybeSingle(); // Retorna o objeto do usuário ou null se não achar nada
 
-            if (data.error) {
-                errEl.textContent   = data.error;
-                errEl.style.display = 'block';
-            } else if (data.success && data.user) {
-                salvarSessao(data.user);
-                iniciarApp(data.user);
-            } else {
-                errEl.textContent   = 'Resposta inesperada do servidor.';
-                errEl.style.display = 'block';
+            if (error) {
+                throw new Error(`Erro no banco: ${error.message}`);
             }
+
+            // Se o retorno for nulo, significa que não achou o e-mail ou a senha está errada
+            if (!usuario) {
+                errEl.textContent   = 'E-mail ou senha incorretos.';
+                errEl.style.display = 'block';
+            } else {
+                // Caso encontre, o login é bem-sucedido
+                salvarSessao(usuario);
+                iniciarApp(usuario);
+            }
+
         } catch (err) {
-            errEl.textContent   = 'Não foi possível conectar ao servidor. Verifique sua conexão.';
+            // Se cair aqui, captura o erro real detalhado para não mascarar falhas de código
+            errEl.textContent   = err.message || 'Erro ao conectar ao servidor.';
             errEl.style.display = 'block';
             console.error('Erro de login:', err.message);
         } finally {
