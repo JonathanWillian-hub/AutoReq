@@ -1,12 +1,13 @@
-// 🔑 Credenciais do Supabase (Substitua pelos seus dados reais)
-// Inicialização do Supabase usando o objeto do config.js
 // ─── CONFIGURAÇÃO DIRETA DO SUPABASE ─────────────────────────────────
-const supabaseUrl = "https://wshucocythcivcwuzzcz.supabase.co"; // Sua URL
-const supabaseKey = "sb_publishable_bFWVqrm3HXzqZlgFgjybWw_8V2z3InC"; // Sua Anon Key pública
+const supabaseUrl = "https://wshucocythcivcwuzzcz.supabase.co";
+
+// Verifique se a chave abaixo está exatamente igual a esta (ela é longa mesmo e termina em InC)
+const supabaseKey = "sb_publishable_bFWVqrm3HXzqZlgFgjybWw_8V2z3InC"; 
+
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
 // E-mail do Administrador Master para a validação de cadastro
-const ADMIN_EMAIL_MASTER = "admin@autoreq.com"; // Seu e-mail padrão
+const ADMIN_EMAIL_MASTER = "admin@autoreq.com";
 // ─────────────────────────────────────────────────────────────────────
 
 // ... Resto do seu código abaixo (certifique-se de que NÃO existam outras linhas declarando o supabaseClient!)
