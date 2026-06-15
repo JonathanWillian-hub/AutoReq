@@ -172,11 +172,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-        // 🚀 Enviando os dados direto para a tabela do Supabase
+        // 🚀 Enviando os dados incluindo o campo obrigatório 'papel'
         const { data, error } = await supabaseClient
             .from('usuarios') 
             .insert([
-                { nome: nome, email: email, senha: senha }
+                { 
+                    nome: nome, 
+                    email: email, 
+                    senha: senha,
+                    papel: 'usuario' // 👈 A mágica acontece aqui! Adicionamos o valor padrão exigido pelo banco
+                }
             ])
             .select();
 
