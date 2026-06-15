@@ -1,3 +1,10 @@
+// 🔑 Credenciais do Supabase (Substitua pelos seus dados reais)
+const SUPABASE_URL = 'https://seu-projeto.supabase.co';
+const SUPABASE_KEY = 'sua-chave-anon-public-aqui';
+
+// 🚀 Inicialização do cliente
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 document.addEventListener('DOMContentLoaded', () => {
 
     let currentUser = null;
@@ -7,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let chartInstance2 = null;
     let relatorioProjetoId = null;
 
-    const API = 'api.php';
     const loginScreen = document.getElementById('login-screen');
     const mainApp     = document.getElementById('main-app');
     const navLinks    = document.querySelectorAll('.nav-item[data-target]');
