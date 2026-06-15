@@ -3,7 +3,7 @@ const SUPABASE_URL = 'https://seu-projeto.supabase.co';
 const SUPABASE_KEY = 'sua-chave-anon-public-aqui';
 
 // 🚀 Inicialização do cliente
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 document.addEventListener('DOMContentLoaded', () => {
 
