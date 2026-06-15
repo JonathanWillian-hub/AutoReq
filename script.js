@@ -1,18 +1,10 @@
-// ─── CONFIGURAÇÃO DIRETA DO SUPABASE ─────────────────────────────────
-const supabaseUrl = "https://wshucocythcivcwuzzcz.supabase.co";
+// 🔑 Credenciais do Supabase (Substitua pelos seus dados reais)
+const SUPABASE_URL = 'https://wshucocythcivcwuzzcz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_bFWVqrm3HXzqZLgFgjybWw_8V2z3InC';
 
-// Verifique se a chave abaixo está exatamente igual a esta (ela é longa mesmo e termina em InC)
-const supabaseKey = "sb_publishable_bFWVqrm3HXzqZlgFgjybWw_8V2z3InC"; 
+// 🚀 Inicialização do cliente
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
-
-// E-mail do Administrador Master para a validação de cadastro
-const ADMIN_EMAIL_MASTER = "admin@autoreq.com";
-// ─────────────────────────────────────────────────────────────────────
-
-// ... Resto do seu código abaixo (certifique-se de que NÃO existam outras linhas declarando o supabaseClient!)
-
-// Agora você pode usar o CONFIG.ADMIN_EMAIL onde precisar validar seu login!
 document.addEventListener('DOMContentLoaded', () => {
 
     let currentUser = null;
@@ -222,21 +214,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // 🚀 REGRA: Se a intenção for se registrar como Administrador ('admin')
             if (papel === 'admin') {
-                // Valida usando a variável direta do topo do arquivo
-                if (email !== ADMIN_EMAIL_MASTER) {
-                    errEl.textContent = 'Apenas o e-mail master predefinido pode se cadastrar como Administrador.';
-                    errEl.style.display = 'block';
-                    if (btnEl) {
-                        btnEl.disabled = false;
-                        btnEl.innerHTML = '<i class="fas fa-user-plus"></i> Criar Conta';
-                    }
-                    return;
-                }
-
-                // Verifica se já existe um administrador no banco
                 const { data: admins, error: adminError } = await supabaseClient
                     .from('usuarios')
-                    .select('id_usuario')
+                    .select('id_usuario') // id_usuario de acordo com o PK do seu diagrama
                     .eq('papel', 'admin');
 
                 if (adminError) {
