@@ -71,13 +71,13 @@ A plataforma oferece um ambiente colaborativo onde equipes podem gerenciar proje
 * CSS3
 * JavaScript
 
-### Back-end
+### Backend-as-a-Service
 
-* PHP
+* Supabase
 
 ### Banco de Dados
 
-* MySQL
+* PostgreSQL
 * Supabase
 
 ### Modelagem
@@ -99,10 +99,7 @@ O sistema segue uma arquitetura em camadas:
 Frontend (HTML/CSS/JS)
         │
         ▼
- API REST (PHP)
-        │
-        ▼
- Banco de Dados (MySQL/Supabase)
+ Banco de Dados (PostgreSQL/Supabase)
 ```
 
 ---
