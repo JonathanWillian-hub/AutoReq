@@ -1,6 +1,6 @@
 // 🔑 Credenciais do Supabase (Substitua pelos seus dados reais)
-const SUPABASE_URL = 'https://seu-projeto.supabase.co';
-const SUPABASE_KEY = 'sua-chave-anon-public-aqui';
+const SUPABASE_URL = 'https://wshucocythcivcwuzzcz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_bFWVqrm3HXzqZLgFgjybWw_8V2z3InC';
 
 // 🚀 Inicialização do cliente
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
