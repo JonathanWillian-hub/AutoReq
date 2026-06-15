@@ -24,9 +24,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const menuToggle     = document.getElementById('menu-toggle');
     const sidebarOverlay = document.getElementById('sidebar-overlay');
 
-    function openSidebar()  { sidebar.classList.add('open'); sidebarOverlay.classList.add('show'); document.body.style.overflow = 'hidden'; }
-    function closeSidebar() { sidebar.classList.remove('open'); sidebarOverlay.classList.remove('show'); document.body.style.overflow = ''; }
-    menuToggle.addEventListener('click', () => sidebar.classList.contains('open') ? closeSidebar() : openSidebar());
+    function openSidebar() {
+        sidebar.classList.add('open');
+        sidebarOverlay.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeSidebar() {
+        sidebar.classList.remove('open');
+        sidebarOverlay.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+
+    menuToggle.addEventListener('click', () => {
+        sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+    });
     sidebarOverlay.addEventListener('click', closeSidebar);
 
     // ─── TOAST ───────────────────────────────────────────────────────────
@@ -72,9 +84,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const raw = localStorage.getItem('autoreq_session');
             if (!raw) return null;
             const { user, timestamp } = JSON.parse(raw);
-            if (Date.now() - timestamp > 8 * 3600 * 1000) { limparSessao(); return null; }
+            if (Date.now() - timestamp > 8 * 3600 * 1000) {
+                limparSessao();
+                return null;
+            }
             return user;
-        } catch { return null; }
+        } catch {
+            return null;
+        }
     }
 
     // ─── HELPER: fetch com JSON ───────────────────────────────────────────
@@ -125,7 +142,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnEl = e.submitter || e.target.querySelector('button[type="submit"]');
 
         errEl.style.display = 'none';
-        if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrando...'; }
+        if (btnEl) {
+            btnEl.disabled = true;
+            btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrando...';
+        }
 
         try {
             const { ok, data } = await apiFetch(`${API}?action=login`, {
@@ -148,61 +168,95 @@ document.addEventListener('DOMContentLoaded', () => {
             errEl.style.display = 'block';
             console.error('Erro de login:', err.message);
         } finally {
-            if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fas fa-sign-in-alt"></i> Entrar'; }
+            if (btnEl) {
+                btnEl.disabled = false;
+                btnEl.innerHTML = '<i class="fas fa-sign-in-alt"></i> Entrar';
+            }
         }
     });
 
     // ─── CADASTRO (formulário nativo no HTML) ─────────────────────────────
     document.getElementById('register-form').addEventListener('submit', async (e) => {
         e.preventDefault();
+
         const nome  = document.getElementById('reg-nome').value.trim();
         const email = document.getElementById('reg-email').value.trim();
         const senha = document.getElementById('reg-password').value;
-        // 🚀 Capturando dinamicamente a função escolhida no select do formulário
-        const papel = document.getElementById('reg-papel').value;
+        const papel = document.getElementById('reg-papel').value; // Captura o valor do select
         const errEl = document.getElementById('login-error');
         const btnEl = e.submitter || e.target.querySelector('button[type="submit"]');
 
         errEl.style.display = 'none';
-        if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando...'; }
+        if (btnEl) {
+            btnEl.disabled = true;
+            btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando...';
+        }
 
-        // 🚀 Atualizado para validar se o papel também foi preenchido
+        // Garante que o campo de papel também foi selecionado na verificação
         if (!nome || !email || !senha || !papel) {
-            errEl.textContent   = 'Preencha todos os campos.';
+            errEl.textContent = 'Preencha todos os campos.';
             errEl.style.display = 'block';
-            if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fas fa-user-plus"></i> Criar Conta'; }
+            if (btnEl) {
+                btnEl.disabled = false;
+                btnEl.innerHTML = '<i class="fas fa-user-plus"></i> Criar Conta';
+            }
             return;
         }
 
         try {
-            // 🚀 Enviando todos os dados preenchidos diretamente para a tabela do Supabase
+            // 🚀 REGRA: Se a intenção for se registrar como Administrador ('admin')
+            if (papel === 'admin') {
+                const { data: admins, error: adminError } = await supabaseClient
+                    .from('usuarios')
+                    .select('id_usuario') // id_usuario de acordo com o PK do seu diagrama
+                    .eq('papel', 'admin');
+
+                if (adminError) {
+                    throw new Error('Falha ao verificar as permissões do servidor.');
+                }
+
+                // Se já retornar um administrador existente na tabela, impede o fluxo
+                if (admins && admins.length > 0) {
+                    errEl.textContent = 'O sistema já possui um Administrador cadastrado. Escolha outra função.';
+                    errEl.style.display = 'block';
+                    if (btnEl) {
+                        btnEl.disabled = false;
+                        btnEl.innerHTML = '<i class="fas fa-user-plus"></i> Criar Conta';
+                    }
+                    return;
+                }
+            }
+
+            // 🚀 Realiza o Insert na tabela enviando as strings aceitas pelo ENUM
             const { data, error } = await supabaseClient
-                .from('usuarios') 
+                .from('usuarios')
                 .insert([
-                    { 
-                        nome: nome, 
-                        email: email, 
+                    {
+                        nome: nome,
+                        email: email,
                         senha: senha,
-                        papel: papel // 👈 Mapeia dinamicamente o valor do select (usuario, admin ou gerente)
+                        papel: papel
                     }
                 ])
                 .select();
 
-            // Se o banco retornar algum erro
             if (error) {
-                errEl.textContent   = error.message;
+                errEl.textContent = `Erro no banco: ${error.message}`;
                 errEl.style.display = 'block';
             } else {
-                toast('Conta criada! Faça login para continuar.');
+                toast('Conta criada com sucesso! Faça seu login.');
                 document.getElementById('register-form').reset();
                 toggleAuth(null, 'login');
             }
         } catch (err) {
-            errEl.textContent   = 'Erro ao conectar ao Supabase.';
+            errEl.textContent = err.message || 'Erro ao conectar ao banco de dados.';
             errEl.style.display = 'block';
             console.error(err);
         } finally {
-            if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fas fa-user-plus"></i> Criar Conta'; }
+            if (btnEl) {
+                btnEl.disabled = false;
+                btnEl.innerHTML = '<i class="fas fa-user-plus"></i> Criar Conta';
+            }
         }
     });
 
@@ -359,7 +413,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.enviarRecuperacao = () => {
         const email = document.getElementById('forgot-email')?.value?.trim();
-        if (!email) { toast('Informe um e-mail.', 'error'); return; }
+        if (!email) {
+            toast('Informe um e-mail.', 'error');
+            return;
+        }
         fecharModal();
         toast(`Link de recuperação enviado para ${email}`);
     };
@@ -450,23 +507,34 @@ document.addEventListener('DOMContentLoaded', () => {
             desc:         document.getElementById('proj-desc').value.trim(),
             usuario_id:   currentUser?.id || 0
         };
-        if (!dados.nome_projeto || !dados.cliente) { toast('Preencha os campos obrigatórios.', 'error'); return; }
+        if (!dados.nome_projeto || !dados.cliente) {
+            toast('Preencha os campos obrigatórios.', 'error');
+            return;
+        }
 
         try {
             if (editId) {
                 dados.projeto_id = editId;
                 const { data } = await apiFetch(API, { method: 'PUT', body: JSON.stringify(dados) });
-                if (data.error) { toast(data.error, 'error'); return; }
+                if (data.error) {
+                    toast(data.error, 'error');
+                    return;
+                }
                 toast('Projeto atualizado com sucesso!');
                 cancelarEdicaoProjeto();
             } else {
                 const { data } = await apiFetch(API, { method: 'POST', body: JSON.stringify(dados) });
-                if (data.error) { toast(data.error, 'error'); return; }
+                if (data.error) {
+                    toast(data.error, 'error');
+                    return;
+                }
                 toast('Projeto criado com sucesso!');
             }
             document.getElementById('form-projeto').reset();
             carregarListaProjetos();
-        } catch { toast('Erro ao salvar projeto. Verifique sua conexão.', 'error'); }
+        } catch {
+            toast('Erro ao salvar projeto. Verifique sua conexão.', 'error');
+        }
     });
 
     async function carregarListaProjetos() {
@@ -494,7 +562,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </td>
                 </tr>`).join('');
-        } catch { tbody.innerHTML = '<tr><td colspan="4" class="empty-msg">Erro ao carregar projetos. Verifique sua conexão.</td></tr>'; }
+        } catch {
+            tbody.innerHTML = '<tr><td colspan="4" class="empty-msg">Erro ao carregar projetos. Verifique sua conexão.</td></tr>';
+        }
     }
 
     window.editarProjeto = (id, nome, cliente, status, desc) => {
@@ -532,10 +602,15 @@ document.addEventListener('DOMContentLoaded', () => {
         fecharModal();
         try {
             const { data } = await apiFetch(`${API}?action=projeto&id=${id}&usuario_id=${currentUser?.id || 0}`, { method: 'DELETE' });
-            if (data.error) { toast(data.error, 'error'); return; }
+            if (data.error) {
+                toast(data.error, 'error');
+                return;
+            }
             toast('Projeto excluído!');
             carregarListaProjetos();
-        } catch { toast('Erro ao excluir projeto.', 'error'); }
+        } catch {
+            toast('Erro ao excluir projeto.', 'error');
+        }
     };
 
     // ─── [RF02] REQUISITOS ────────────────────────────────────────────────
@@ -552,9 +627,18 @@ document.addEventListener('DOMContentLoaded', () => {
             usuario_id:          currentUser?.id || 0
         };
 
-        if (!dados.projeto_id)           { toast('Selecione um projeto.', 'error'); return; }
-        if (!dados.id_requisito_manual)  { toast('Informe o código do requisito.', 'error'); return; }
-        if (!dados.titulo)               { toast('Informe o título do requisito.', 'error'); return; }
+        if (!dados.projeto_id) {
+            toast('Selecione um projeto.', 'error');
+            return;
+        }
+        if (!dados.id_requisito_manual) {
+            toast('Informe o código do requisito.', 'error');
+            return;
+        }
+        if (!dados.titulo) {
+            toast('Informe o título do requisito.', 'error');
+            return;
+        }
 
         try {
             if (editId) {
@@ -565,16 +649,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     usuario_id: currentUser?.id || 0
                 };
                 const { data } = await apiFetch(API, { method: 'PUT', body: JSON.stringify(putDados) });
-                if (data.error) { toast(data.error, 'error'); return; }
+                if (data.error) {
+                    toast(data.error, 'error');
+                    return;
+                }
                 toast('Requisito atualizado!');
                 cancelarEdicaoReq();
             } else {
                 const { data } = await apiFetch(API, { method: 'POST', body: JSON.stringify(dados) });
-                if (data.error) { toast(data.error, 'error'); return; }
+                if (data.error) {
+                    toast(data.error, 'error');
+                    return;
+                }
                 toast('Requisito cadastrado com sucesso!');
             }
             document.getElementById('form-requisito').reset();
-        } catch { toast('Erro ao salvar requisito. Verifique sua conexão.', 'error'); }
+        } catch {
+            toast('Erro ao salvar requisito. Verifique sua conexão.', 'error');
+        }
     });
 
     window.cancelarEdicaoReq = () => {
@@ -699,10 +791,15 @@ document.addEventListener('DOMContentLoaded', () => {
         fecharModal();
         try {
             const { data } = await apiFetch(`${API}?action=requisito&id=${id}&usuario_id=${currentUser?.id || 0}`, { method: 'DELETE' });
-            if (data.error) { toast(data.error, 'error'); return; }
+            if (data.error) {
+                toast(data.error, 'error');
+                return;
+            }
             toast('Requisito excluído!');
             carregarRequisitosDetalhes(currentProjetoId);
-        } catch { toast('Erro ao excluir requisito.', 'error'); }
+        } catch {
+            toast('Erro ao excluir requisito.', 'error');
+        }
     };
 
     // ─── [RF05] VALIDAÇÃO ─────────────────────────────────────────────────
@@ -710,12 +807,22 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const { data } = await apiFetch(API, {
                 method: 'PUT',
-                body: JSON.stringify({ requisito_id: id, novo_status: novoStatus, justificativa, usuario_id: currentUser?.id || 0 }),
+                body: JSON.stringify({
+                    requisito_id: id,
+                    novo_status: novoStatus,
+                    justificativa,
+                    usuario_id: currentUser?.id || 0
+                }),
             });
-            if (data.error) { toast(data.error, 'error'); return; }
+            if (data.error) {
+                toast(data.error, 'error');
+                return;
+            }
             toast(`Requisito marcado como: ${novoStatus}`);
             carregarRequisitosDetalhes(currentProjetoId);
-        } catch { toast('Erro ao validar requisito.', 'error'); }
+        } catch {
+            toast('Erro ao validar requisito.', 'error');
+        }
     };
 
     window.abrirRevisao = (id) => {
@@ -764,26 +871,43 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button class="btn btn-secondary" onclick="fecharModal()"><i class="fas fa-times"></i> Fechar</button>
                     <button class="btn btn-primary" onclick="salvarComentario(${reqId})"><i class="fas fa-paper-plane"></i> Enviar</button>
                 </div>`);
-        } catch { toast('Erro ao carregar comentários.', 'error'); }
+        } catch {
+            toast('Erro ao carregar comentários.', 'error');
+        }
     };
 
     window.salvarComentario = async (reqId) => {
         const texto = document.getElementById('novo-comentario')?.value?.trim();
-        if (!texto) { toast('Escreva um comentário antes de enviar.', 'error'); return; }
+        if (!texto) {
+            toast('Escreva um comentário antes de enviar.', 'error');
+            return;
+        }
         try {
             const { data } = await apiFetch(`${API}?action=comentario`, {
                 method: 'POST',
-                body: JSON.stringify({ requisito_id: reqId, autor: currentUser?.nome || 'Usuário', texto }),
+                body: JSON.stringify({
+                    requisito_id: reqId,
+                    autor: currentUser?.nome || 'Usuário',
+                    texto
+                }),
             });
-            if (data.error) { toast(data.error, 'error'); return; }
+            if (data.error) {
+                toast(data.error, 'error');
+                return;
+            }
             toast('Comentário salvo!');
             fecharModal();
-        } catch { toast('Erro ao salvar comentário.', 'error'); }
+        } catch {
+            toast('Erro ao salvar comentário.', 'error');
+        }
     };
 
     // ─── [RF06] EXPORTAR ERS ──────────────────────────────────────────────
     window.exportarERS = async (formato) => {
-        if (!relatorioProjetoId) { toast('Selecione um projeto.', 'error'); return; }
+        if (!relatorioProjetoId) {
+            toast('Selecione um projeto.', 'error');
+            return;
+        }
         try {
             const [rProj, rReqs] = await Promise.all([
                 apiFetch(`${API}?tipo=projetos&usuario_id=${currentUser?.id || 0}`),
@@ -793,7 +917,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const reqs    = rReqs.data;
             const projeto = Array.isArray(projs) ? projs.find(p => p.id == relatorioProjetoId) : null;
 
-            if (!Array.isArray(reqs) || !reqs.length) { toast('Nenhum requisito encontrado para exportar.', 'error'); return; }
+            if (!Array.isArray(reqs) || !reqs.length) {
+                toast('Nenhum requisito encontrado para exportar.', 'error');
+                return;
+            }
 
             const dataHoje    = new Date().toLocaleDateString('pt-BR');
             const nomeProjeto = projeto?.nome || 'Projeto';
@@ -831,10 +958,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h2>Requisitos Não Funcionais (RNF)</h2>${gerarSecao(rnfList) || '<p>Nenhum.</p>'}
                     <script>window.onload=()=>{window.print();};<\/script></body></html>`;
                 const win = window.open('', '_blank');
-                if (win) { win.document.write(html); win.document.close(); }
+                if (win) {
+                    win.document.write(html);
+                    win.document.close();
+                }
                 toast('PDF aberto na janela de impressão!');
             }
-        } catch { toast('Erro ao exportar ERS.', 'error'); }
+        } catch {
+            toast('Erro ao exportar ERS.', 'error');
+        }
     };
 
     function downloadBlob(blob, filename) {
@@ -862,15 +994,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
             chartInstance1 = new Chart(document.getElementById('chartRequisitos'), {
                 type: 'doughnut',
-                data: { labels: ['Funcionais (RF)', 'Não Funcionais (RNF)'], datasets: [{ data: [rf, rnf], backgroundColor: ['#2563eb', '#10b981'], borderWidth: 0 }] },
-                options: { plugins: { legend: { position: 'bottom' } }, cutout: '65%' }
+                data: {
+                    labels: ['Funcionais (RF)', 'Não Funcionais (RNF)'],
+                    datasets: [{
+                        data: [rf, rnf],
+                        backgroundColor: ['#2563eb', '#10b981'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    plugins: { legend: { position: 'bottom' } },
+                    cutout: '65%'
+                }
             });
             chartInstance2 = new Chart(document.getElementById('chartCategorias'), {
                 type: 'bar',
-                data: { labels: ['Alta', 'Média', 'Baixa'], datasets: [{ label: 'Requisitos por Prioridade', data: [alta, media, baixa], backgroundColor: ['#ef4444', '#f59e0b', '#10b981'], borderRadius: 6 }] },
-                options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+                data: {
+                    labels: ['Alta', 'Média', 'Baixa'],
+                    datasets: [{
+                        label: 'Requisitos por Prioridade',
+                        data: [alta, media, baixa],
+                        backgroundColor: ['#ef4444', '#f59e0b', '#10b981'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 }
+                        }
+                    }
+                }
             });
-        } catch { console.error('Erro ao gerar relatórios'); }
+        } catch {
+            console.error('Erro ao gerar relatórios');
+        }
     }
 
     // ─── DASHBOARD ────────────────────────────────────────────────────────
@@ -898,7 +1058,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('stat-pend').textContent  = Array.isArray(reqs)  ? reqs.filter(r => r.status === 'Pendente').length : 0;
                 document.getElementById('stat-aprov').textContent = Array.isArray(reqs)  ? reqs.filter(r => r.status === 'Aprovado').length : 0;
             }
-        } catch { console.error('Erro ao carregar estatísticas'); }
+        } catch {
+            console.error('Erro ao carregar estatísticas');
+        }
     }
 
     // ─── HELPERS ──────────────────────────────────────────────────────────
