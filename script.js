@@ -5,10 +5,6 @@ const supabaseKey = CONFIG.SUPABASE_KEY;
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
 // Agora você pode usar o CONFIG.ADMIN_EMAIL onde precisar validar seu login!
-
-// 🚀 Inicialização do cliente
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
 document.addEventListener('DOMContentLoaded', () => {
 
     let currentUser = null;
@@ -236,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fas fa-user-plus"></i> Criar Conta'; }
                     return;
                 }
-                
+
                 if (adminError) {
                     throw new Error('Falha ao verificar as permissões do servidor.');
                 }

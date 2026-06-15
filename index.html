@@ -611,6 +611,17 @@
 
 <script src="config.js"></script>
 
+<script>
+    if (typeof CONFIG === 'undefined') {
+        window.CONFIG = {
+            // O Render expõe variáveis de ambiente em um objeto global chamado process.env ou injetado
+            SUPABASE_URL: "https://wshucocythcivcwuzzcz.supabase.co", // Pode deixar a URL pública aqui
+            SUPABASE_KEY: "SUA_PUBLISHABLE_KEY_AQUI",                // Sua Anon Key pública
+            ADMIN_EMAIL: "admin@autoreq.com"                         // Seu e-mail predefinido
+        };
+    }
+</script>
+
 <script src="script.js"></script>
 </body>
 </html>
