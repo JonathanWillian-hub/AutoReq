@@ -1,6 +1,10 @@
 // 🔑 Credenciais do Supabase (Substitua pelos seus dados reais)
-const SUPABASE_URL = 'https://wshucocythcivcwuzzcz.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_bFWVqrm3HXzqZLgFgjybWw_8V2z3InC';
+// Inicialização do Supabase usando o objeto do config.js
+const supabaseUrl = CONFIG.SUPABASE_URL;
+const supabaseKey = CONFIG.SUPABASE_KEY;
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+// Agora você pode usar o CONFIG.ADMIN_EMAIL onde precisar validar seu login!
 
 // 🚀 Inicialização do cliente
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -214,11 +218,25 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // 🚀 REGRA: Se a intenção for se registrar como Administrador ('admin')
             if (papel === 'admin') {
+                // 1. Verifica se o e-mail digitado é diferente do e-mail do admin dono do sistema
+                if (email !== CONFIG.ADMIN_EMAIL) {
+                    errEl.textContent   = 'Apenas o e-mail master predefinido pode se cadastrar como Administrador.';
+                    errEl.style.display = 'block';
+                    if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fas fa-user-plus"></i> Criar Conta'; }
+                    return;
+                }
                 const { data: admins, error: adminError } = await supabaseClient
                     .from('usuarios')
                     .select('id_usuario') // id_usuario de acordo com o PK do seu diagrama
                     .eq('papel', 'admin');
-
+                
+                if (admins && admins.length > 0) {
+                    errEl.textContent   = 'O sistema já possui um Administrador cadastrado. Escolha outra função.';
+                    errEl.style.display = 'block';
+                    if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fas fa-user-plus"></i> Criar Conta'; }
+                    return;
+                }
+                
                 if (adminError) {
                     throw new Error('Falha ao verificar as permissões do servidor.');
                 }
