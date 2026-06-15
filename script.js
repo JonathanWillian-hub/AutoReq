@@ -1,8 +1,15 @@
 // 🔑 Credenciais do Supabase (Substitua pelos seus dados reais)
 // Inicialização do Supabase usando o objeto do config.js
-const supabaseUrl = CONFIG.SUPABASE_URL;
-const supabaseKey = CONFIG.SUPABASE_KEY;
+// ─── CONFIGURAÇÃO DIRETA DO SUPABASE ─────────────────────────────────
+const supabaseUrl = "https://wshucocythcivcwuzzcz.supabase.co"; // Sua URL
+const supabaseKey = "sb_publishable_bFWVqrm3HXzqZlgFgjybWw_8V2z3InC"; // Sua Anon Key pública
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+// E-mail do Administrador Master para a validação de cadastro
+const ADMIN_EMAIL_MASTER = "admin@autoreq.com"; // Seu e-mail padrão
+// ─────────────────────────────────────────────────────────────────────
+
+// ... Resto do seu código abaixo (certifique-se de que NÃO existam outras linhas declarando o supabaseClient!)
 
 // Agora você pode usar o CONFIG.ADMIN_EMAIL onde precisar validar seu login!
 document.addEventListener('DOMContentLoaded', () => {
@@ -214,24 +221,22 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // 🚀 REGRA: Se a intenção for se registrar como Administrador ('admin')
             if (papel === 'admin') {
-                // 1. Verifica se o e-mail digitado é diferente do e-mail do admin dono do sistema
-                if (email !== CONFIG.ADMIN_EMAIL) {
-                    errEl.textContent   = 'Apenas o e-mail master predefinido pode se cadastrar como Administrador.';
+                // Valida usando a variável direta do topo do arquivo
+                if (email !== ADMIN_EMAIL_MASTER) {
+                    errEl.textContent = 'Apenas o e-mail master predefinido pode se cadastrar como Administrador.';
                     errEl.style.display = 'block';
-                    if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fas fa-user-plus"></i> Criar Conta'; }
+                    if (btnEl) {
+                        btnEl.disabled = false;
+                        btnEl.innerHTML = '<i class="fas fa-user-plus"></i> Criar Conta';
+                    }
                     return;
                 }
+
+                // Verifica se já existe um administrador no banco
                 const { data: admins, error: adminError } = await supabaseClient
                     .from('usuarios')
-                    .select('id_usuario') // id_usuario de acordo com o PK do seu diagrama
+                    .select('id_usuario')
                     .eq('papel', 'admin');
-                
-                if (admins && admins.length > 0) {
-                    errEl.textContent   = 'O sistema já possui um Administrador cadastrado. Escolha outra função.';
-                    errEl.style.display = 'block';
-                    if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fas fa-user-plus"></i> Criar Conta'; }
-                    return;
-                }
 
                 if (adminError) {
                     throw new Error('Falha ao verificar as permissões do servidor.');
