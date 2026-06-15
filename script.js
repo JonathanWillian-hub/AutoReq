@@ -154,54 +154,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ─── CADASTRO (formulário nativo no HTML) ─────────────────────────────
     document.getElementById('register-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const nome  = document.getElementById('reg-nome').value.trim();
-    const email = document.getElementById('reg-email').value.trim();
-    const senha = document.getElementById('reg-password').value;
-    const errEl = document.getElementById('login-error');
-    const btnEl = e.submitter || e.target.querySelector('button[type="submit"]');
+        e.preventDefault();
+        const nome  = document.getElementById('reg-nome').value.trim();
+        const email = document.getElementById('reg-email').value.trim();
+        const senha = document.getElementById('reg-password').value;
+        // 🚀 Capturando dinamicamente a função escolhida no select do formulário
+        const papel = document.getElementById('reg-papel').value;
+        const errEl = document.getElementById('login-error');
+        const btnEl = e.submitter || e.target.querySelector('button[type="submit"]');
 
-    errEl.style.display = 'none';
-    if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando...'; }
+        errEl.style.display = 'none';
+        if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando...'; }
 
-    if (!nome || !email || !senha) {
-        errEl.textContent   = 'Preencha todos os campos.';
-        errEl.style.display = 'block';
-        if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fas fa-user-plus"></i> Criar Conta'; }
-        return;
-    }
-
-    try {
-        // 🚀 Enviando os dados incluindo o campo obrigatório 'papel'
-        const { data, error } = await supabaseClient
-            .from('usuarios') 
-            .insert([
-                { 
-                    nome: nome, 
-                    email: email, 
-                    senha: senha,
-                    papel: 'usuario' // 👈 A mágica acontece aqui! Adicionamos o valor padrão exigido pelo banco
-                }
-            ])
-            .select();
-
-        // Se o banco retornar algum erro
-        if (error) {
-            errEl.textContent   = error.message;
+        // 🚀 Atualizado para validar se o papel também foi preenchido
+        if (!nome || !email || !senha || !papel) {
+            errEl.textContent   = 'Preencha todos os campos.';
             errEl.style.display = 'block';
-        } else {
-            toast('Conta criada! Faça login para continuar.');
-            document.getElementById('register-form').reset();
-            toggleAuth(null, 'login');
+            if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fas fa-user-plus"></i> Criar Conta'; }
+            return;
         }
-    } catch (err) {
-        errEl.textContent   = 'Erro ao conectar ao Supabase.';
-        errEl.style.display = 'block';
-        console.error(err);
-    } finally {
-        if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fas fa-user-plus"></i> Criar Conta'; }
-    }
-});
+
+        try {
+            // 🚀 Enviando todos os dados preenchidos diretamente para a tabela do Supabase
+            const { data, error } = await supabaseClient
+                .from('usuarios') 
+                .insert([
+                    { 
+                        nome: nome, 
+                        email: email, 
+                        senha: senha,
+                        papel: papel // 👈 Mapeia dinamicamente o valor do select (usuario, admin ou gerente)
+                    }
+                ])
+                .select();
+
+            // Se o banco retornar algum erro
+            if (error) {
+                errEl.textContent   = error.message;
+                errEl.style.display = 'block';
+            } else {
+                toast('Conta criada! Faça login para continuar.');
+                document.getElementById('register-form').reset();
+                toggleAuth(null, 'login');
+            }
+        } catch (err) {
+            errEl.textContent   = 'Erro ao conectar ao Supabase.';
+            errEl.style.display = 'block';
+            console.error(err);
+        } finally {
+            if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fas fa-user-plus"></i> Criar Conta'; }
+        }
+    });
 
     // ─── (mantido para compatibilidade com modal, se usado) ───────────────
     const cadastroLink = document.getElementById('register-link');
